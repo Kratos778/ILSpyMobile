@@ -1,0 +1,41 @@
+name: Compilar ILSpy Mobile APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:   # Permite executar manualmente
+
+jobs:
+  build-android:
+    runs-on: windows-latest
+
+    steps:
+    - name: Clonar o repositório
+      uses: actions/checkout@v4
+
+    - name: Configurar .NET 8
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Instalar workload Android
+      run: dotnet workload install android
+
+    - name: Restaurar pacotes
+      run: dotnet restore
+
+    - name: Compilar e publicar APK (Release)
+      run: |
+        dotnet publish -c Release -f net8.0-android `
+          /p:AndroidPackageFormat=apk `
+          /p:AndroidKeyStore=false `
+          /p:AndroidGenerateNoSignatureApk=true
+
+    - name: Upload do APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: ilspy-mobile-apk
+        path: |
+          **/bin/Release/net8.0-android/**/*-Signed.apk
+          **/bin/Release/net8.0-android/**/*.apk
+        if-no-files-found: warn
